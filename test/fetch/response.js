@@ -28,7 +28,7 @@ test('arg validation', (t) => {
     new Response(null, {
       status: '600'
     })
-  }, TypeError)
+  }, RangeError)
   t.throws(() => {
     // eslint-disable-next-line
     new Response(null, {
@@ -45,36 +45,36 @@ test('arg validation', (t) => {
     }, TypeError)
   }
 
-  t.throws(() => {
-    Response.prototype[Symbol.toStringTag].call(null)
+  t.doesNotThrow(() => {
+    Response.prototype[Symbol.toStringTag].charAt(0)
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.type.call(null)
+    Response.prototype.type.toString()
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.url.call(null)
+    Response.prototype.url.toString()
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.redirected.call(null)
+    Response.prototype.redirected.toString()
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.status.call(null)
+    Response.prototype.status.toString()
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.ok.call(null)
+    Response.prototype.ok.toString()
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.statusText.call(null)
+    Response.prototype.statusText.toString()
   }, TypeError)
 
   t.throws(() => {
-    Response.prototype.headers.call(null)
+    Response.prototype.headers.toString()
   }, TypeError)
 
   t.throws(() => {
@@ -92,5 +92,13 @@ test('response clone', (t) => {
   t.equal(response1.body, response1.clone().body)
   t.equal(response2.body, response2.clone().body)
   t.equal(response2.body, null)
+  t.end()
+})
+
+test('Symbol.toStringTag', (t) => {
+  const resp = new Response()
+
+  t.equal(resp[Symbol.toStringTag], 'Response')
+  t.equal(Response.prototype[Symbol.toStringTag], 'Response')
   t.end()
 })

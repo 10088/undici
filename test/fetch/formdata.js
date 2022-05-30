@@ -73,18 +73,24 @@ test('arg validation', (t) => {
     Reflect.apply(FormData.prototype[Symbol.iterator], null)
   }, TypeError)
 
+  // toStringTag
+  t.doesNotThrow(() => {
+    FormData.prototype[Symbol.toStringTag].charAt(0)
+  })
+
   t.end()
 })
 
 test('append file', (t) => {
   const form = new FormData()
-  form.set('asd', new File([], 'asd1'), 'asd2')
+  form.set('asd', new File([], 'asd1', { type: 'text/plain' }), 'asd2')
   form.append('asd2', new File([], 'asd1'), 'asd2')
 
   t.equal(form.has('asd'), true)
   t.equal(form.has('asd2'), true)
   t.equal(form.get('asd').name, 'asd2')
   t.equal(form.get('asd2').name, 'asd2')
+  t.equal(form.get('asd').type, 'text/plain')
   form.delete('asd')
   t.equal(form.get('asd'), null)
   t.equal(form.has('asd2'), true)
@@ -95,9 +101,10 @@ test('append file', (t) => {
 
 test('append blob', async (t) => {
   const form = new FormData()
-  form.set('asd', new Blob(['asd1']))
+  form.set('asd', new Blob(['asd1'], { type: 'text/plain' }))
 
   t.equal(form.has('asd'), true)
+  t.equal(form.get('asd').type, 'text/plain')
   t.equal(await form.get('asd').text(), 'asd1')
   form.delete('asd')
   t.equal(form.get('asd'), null)
@@ -107,9 +114,10 @@ test('append blob', async (t) => {
 
 test('append third-party blob', async (t) => {
   const form = new FormData()
-  form.set('asd', new ThirdPartyBlob(['asd1']))
+  form.set('asd', new ThirdPartyBlob(['asd1'], { type: 'text/plain' }))
 
   t.equal(form.has('asd'), true)
+  t.equal(form.get('asd').type, 'text/plain')
   t.equal(await form.get('asd').text(), 'asd1')
   form.delete('asd')
   t.equal(form.get('asd'), null)
@@ -208,5 +216,12 @@ test('formData.values', (t) => {
 test('formData toStringTag', (t) => {
   const form = new FormData()
   t.equal(form[Symbol.toStringTag], 'FormData')
+  t.equal(FormData.prototype[Symbol.toStringTag], 'FormData')
+  t.end()
+})
+
+test('formData.constructor.name', (t) => {
+  const form = new FormData()
+  t.equal(form.constructor.name, 'FormData')
   t.end()
 })

@@ -8,12 +8,6 @@ const {
   fill
 } = require('../../lib/fetch/headers')
 const { kGuard } = require('../../lib/fetch/symbols')
-const {
-  forbiddenHeaderNames,
-  forbiddenResponseHeaderNames
-} = require('../../lib/fetch/constants')
-const { createServer } = require('http')
-const { fetch } = require('../../index')
 
 tap.test('Headers initialization', t => {
   t.plan(7)
@@ -289,6 +283,41 @@ tap.test('Headers set', t => {
   })
 })
 
+tap.test('Headers forEach', t => {
+  const headers = new Headers([['a', 'b'], ['c', 'd']])
+
+  t.test('standard', t => {
+    t.equal(typeof headers.forEach, 'function')
+
+    headers.forEach((value, key, headerInstance) => {
+      t.ok(value === 'b' || value === 'd')
+      t.ok(key === 'a' || key === 'c')
+      t.equal(headers, headerInstance)
+    })
+
+    t.end()
+  })
+
+  t.test('when no thisArg is set, it is globalThis', (t) => {
+    headers.forEach(function () {
+      t.equal(this, globalThis)
+    })
+
+    t.end()
+  })
+
+  t.test('with thisArg', t => {
+    const thisArg = { a: Math.random() }
+    headers.forEach(function () {
+      t.equal(this, thisArg)
+    }, thisArg)
+
+    t.end()
+  })
+
+  t.end()
+})
+
 tap.test('Headers as Iterable', t => {
   t.plan(8)
 
@@ -483,14 +512,14 @@ tap.test('arg validation', (t) => {
   }, TypeError)
 
   // get [Symbol.toStringTag]
-  t.throws(() => {
+  t.doesNotThrow(() => {
     Object.prototype.toString.call(Headers.prototype)
-  }, TypeError)
+  })
 
   // toString
-  t.throws(() => {
+  t.doesNotThrow(() => {
     Headers.prototype.toString.call(null)
-  }, TypeError)
+  })
 
   // append
   t.throws(() => {
@@ -551,6 +580,42 @@ tap.test('arg validation', (t) => {
   t.end()
 })
 
+tap.test('function signature verification', (t) => {
+  t.test('function length', (t) => {
+    t.equal(Headers.prototype.append.length, 2)
+    t.equal(Headers.prototype.constructor.length, 0)
+    t.equal(Headers.prototype.delete.length, 1)
+    t.equal(Headers.prototype.entries.length, 0)
+    t.equal(Headers.prototype.forEach.length, 1)
+    t.equal(Headers.prototype.get.length, 1)
+    t.equal(Headers.prototype.has.length, 1)
+    t.equal(Headers.prototype.keys.length, 0)
+    t.equal(Headers.prototype.set.length, 2)
+    t.equal(Headers.prototype.values.length, 0)
+    t.equal(Headers.prototype[Symbol.iterator].length, 0)
+    t.equal(Headers.prototype.toString.length, 0)
+
+    t.end()
+  })
+
+  t.test('function equality', (t) => {
+    t.equal(Headers.prototype.entries, Headers.prototype[Symbol.iterator])
+    t.equal(Headers.prototype.toString, Object.prototype.toString)
+
+    t.end()
+  })
+
+  t.test('toString and Symbol.toStringTag', (t) => {
+    t.equal(Object.prototype.toString.call(Headers.prototype), '[object Headers]')
+    t.equal(Headers.prototype[Symbol.toStringTag], 'Headers')
+    t.equal(Headers.prototype.toString.call(null), '[object Null]')
+
+    t.end()
+  })
+
+  t.end()
+})
+
 tap.test('various init paths of Headers', (t) => {
   const h1 = new Headers()
   const h2 = new Headers({})
@@ -589,77 +654,4 @@ tap.test('request-no-cors guard', (t) => {
   t.doesNotThrow(() => { headers.append('key', 'val') })
   t.doesNotThrow(() => { headers.delete('key') })
   t.end()
-})
-
-tap.test('request guard', (t) => {
-  const headers = new Headers(forbiddenHeaderNames.map(k => [k, 'v']))
-  headers[kGuard] = 'request'
-  headers.set('set-cookie', 'val')
-
-  for (const name of forbiddenHeaderNames) {
-    headers.set(name, '1')
-    headers.append(name, '1')
-    t.equal(headers.get(name), 'v')
-    headers.delete(name)
-    t.equal(headers.has(name), true)
-  }
-
-  t.equal(headers.get('set-cookie'), 'val')
-  t.equal(headers.has('set-cookie'), true)
-
-  t.end()
-})
-
-tap.test('response guard', (t) => {
-  const headers = new Headers(forbiddenResponseHeaderNames.map(k => [k, 'v']))
-  headers[kGuard] = 'response'
-  headers.set('key', 'val')
-  headers.set('keep-alive', 'val')
-
-  for (const name of forbiddenResponseHeaderNames) {
-    headers.set(name, '1')
-    headers.append(name, '1')
-    t.equal(headers.get(name), 'v')
-    headers.delete(name)
-    t.equal(headers.has(name), true)
-  }
-
-  t.equal(headers.get('keep-alive'), 'val')
-  t.equal(headers.has('keep-alive'), true)
-
-  t.end()
-})
-
-tap.test('set-cookie[2] in Headers constructor', (t) => {
-  const headers = new Headers(forbiddenResponseHeaderNames.map(k => [k, 'v']))
-
-  for (const header of forbiddenResponseHeaderNames) {
-    t.ok(headers.has(header))
-    t.equal(headers.get(header), 'v')
-  }
-
-  t.end()
-})
-
-// https://github.com/nodejs/undici/issues/1328
-tap.test('set-cookie[2] received from server - issue #1328', (t) => {
-  const server = createServer((req, res) => {
-    res.setHeader('set-cookie', 'my-cookie; wow')
-    res.end('Goodbye!')
-  }).unref()
-  t.teardown(server.close.bind(server))
-
-  server.listen(0, async () => {
-    const { headers } = await fetch(`http://localhost:${server.address().port}`)
-
-    t.notOk(headers.has('set-cookie'))
-    t.notOk(headers.has('Set-cookie'))
-    t.notOk(headers.has('sEt-CoOkIe'))
-
-    t.equal(headers.get('set-cookie'), null)
-    t.equal(headers.get('Set-cookie'), null)
-    t.equal(headers.get('sEt-CoOkIe'), null)
-
-    t.end()
-  })
 })

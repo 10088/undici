@@ -8,7 +8,6 @@ const {
   Headers
 } = require('../../')
 const { kState } = require('../../lib/fetch/symbols.js')
-const { URLSearchParams } = require('url')
 
 test('arg validation', (t) => {
   // constructor
@@ -98,56 +97,60 @@ test('arg validation', (t) => {
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.destination.call(null)
+    Request.prototype.destination.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.referrer.call(null)
+    Request.prototype.referrer.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.referrerPolicy.call(null)
+    Request.prototype.referrerPolicy.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.mode.call(null)
+    Request.prototype.mode.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.credentials.call(null)
+    Request.prototype.credentials.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.cache.call(null)
+    Request.prototype.cache.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.redirect.call(null)
+    Request.prototype.redirect.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.integrity.call(null)
+    Request.prototype.integrity.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.keepalive.call(null)
+    Request.prototype.keepalive.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.isReloadNavigation.call(null)
+    Request.prototype.isReloadNavigation.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.isHistoryNavigation.call(null)
+    Request.prototype.isHistoryNavigation.toString()
   }, TypeError)
 
   t.throws(() => {
-    Request.prototype.signal.call(null)
+    Request.prototype.signal.toString()
   }, TypeError)
 
   t.throws(() => {
     Request.prototype.clone.call(null)
   }, TypeError)
+
+  t.doesNotThrow(() => {
+    Request.prototype[Symbol.toStringTag].charAt(0)
+  })
 
   t.end()
 })
@@ -325,5 +328,13 @@ test('Passing headers in init', (t) => {
     t.end()
   })
 
+  t.end()
+})
+
+test('Symbol.toStringTag', (t) => {
+  const req = new Request('http://localhost')
+
+  t.equal(req[Symbol.toStringTag], 'Request')
+  t.equal(Request.prototype[Symbol.toStringTag], 'Request')
   t.end()
 })

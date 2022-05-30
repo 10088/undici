@@ -4,16 +4,16 @@ const { test } = require('tap')
 const { File, FileLike } = require('../../lib/fetch/file')
 
 test('args validation', (t) => {
-  t.plan(12)
+  t.plan(14)
 
   t.throws(() => {
-    File.prototype.name.call(null)
+    File.prototype.name.toString()
   }, TypeError)
   t.throws(() => {
-    File.prototype.lastModified.call(null)
+    File.prototype.lastModified.toString()
   }, TypeError)
-  t.throws(() => {
-    File.prototype[Symbol.toStringTag].call(null)
+  t.doesNotThrow(() => {
+    File.prototype[Symbol.toStringTag].charAt(0)
   }, TypeError)
 
   t.throws(() => {
@@ -29,20 +29,23 @@ test('args validation', (t) => {
     FileLike.prototype.text.call(null)
   }, TypeError)
   t.throws(() => {
-    FileLike.prototype.size.call(null)
+    FileLike.prototype.size.toString()
   }, TypeError)
   t.throws(() => {
-    FileLike.prototype.type.call(null)
+    FileLike.prototype.type.toString()
   }, TypeError)
   t.throws(() => {
-    FileLike.prototype.name.call(null)
+    FileLike.prototype.name.toString()
   }, TypeError)
   t.throws(() => {
-    FileLike.prototype.lastModified.call(null)
+    FileLike.prototype.lastModified.toString()
   }, TypeError)
-  t.throws(() => {
-    FileLike.prototype[Symbol.toStringTag].call(null)
+  t.doesNotThrow(() => {
+    FileLike.prototype[Symbol.toStringTag].charAt(0)
   }, TypeError)
+
+  t.equal(File.prototype[Symbol.toStringTag], 'File')
+  t.equal(FileLike.prototype[Symbol.toStringTag], 'File')
 })
 
 test('return value of File.lastModified', (t) => {
