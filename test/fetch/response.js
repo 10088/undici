@@ -5,7 +5,7 @@ const {
   Response
 } = require('../../')
 
-test('arg validation', (t) => {
+test('arg validation', async (t) => {
   // constructor
   t.throws(() => {
     // eslint-disable-next-line
@@ -78,7 +78,29 @@ test('arg validation', (t) => {
   }, TypeError)
 
   t.throws(() => {
+    // eslint-disable-next-line no-unused-expressions
+    Response.prototype.body
+  }, TypeError)
+
+  t.throws(() => {
+    // eslint-disable-next-line no-unused-expressions
+    Response.prototype.bodyUsed
+  }, TypeError)
+
+  t.throws(() => {
     Response.prototype.clone.call(null)
+  }, TypeError)
+
+  await t.rejects(async () => {
+    await new Response('http://localhost').text.call({
+      blob () {
+        return {
+          text () {
+            return Promise.resolve('emulating response.blob()')
+          }
+        }
+      }
+    })
   }, TypeError)
 
   t.end()
@@ -100,5 +122,19 @@ test('Symbol.toStringTag', (t) => {
 
   t.equal(resp[Symbol.toStringTag], 'Response')
   t.equal(Response.prototype[Symbol.toStringTag], 'Response')
+  t.end()
+})
+
+test('async iterable body', async (t) => {
+  const asyncIterable = {
+    async * [Symbol.asyncIterator] () {
+      yield 'a'
+      yield 'b'
+      yield 'c'
+    }
+  }
+
+  const response = new Response(asyncIterable)
+  t.equal(await response.text(), 'abc')
   t.end()
 })
